@@ -6,6 +6,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from datetime import timedelta
+from django.utils import timezone
 
 
 class UserRegisterView(generics.CreateAPIView):
@@ -22,6 +24,7 @@ class ProfileView(generics.RetrieveAPIView):
     def get_object(self):
         return self.request.user
 
+
 #password change using previous password
 class PasswordChangeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -32,3 +35,19 @@ class PasswordChangeView(APIView):
             request.user.save()
             return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+#delete account view
+class DeleteAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        user = request.user
+        
+        if user.is_deleted:
+            return Response({'message': 'Account is already scheduled for deletion'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user.is_deleted = True
+        user.delete_date = timezone.now() + timedelta(days=30)
+        user.save()
+        
+        return Response({'message': 'Account schedule for deletion'}, status=status.HTTP_200_OK)
