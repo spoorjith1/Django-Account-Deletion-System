@@ -20,5 +20,5 @@ urlpatterns = [
     path('profile/account-delete/', AccViews.DeleteAccountView.as_view(), name='account_delete'),
     
     #restore account
-    path('restore-account/', AccViews.RestoreAccountView.as_view(), name='account_restore'),
+    path('account-restore/', AccViews.RestoreAccountView.as_view(), name='account_restore'),
 ]
