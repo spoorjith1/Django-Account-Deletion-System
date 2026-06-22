@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import User
 from django.contrib.auth.password_validation import validate_password
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -52,3 +53,24 @@ class PasswordChangeSerializer(serializers.Serializer):
         
         validate_password(new_password, user)
         return attrs
+
+
+
+#custom login
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        
+        if user.is_deleted:
+            return {
+                'account_scheduled_for_deletion': True,
+                'user_id': user.id,
+                'username': user.username,
+                'deletion_date': user.deletion_date
+            }
+        return {
+            'account_scheduled_for_deletion': False,
+            'access': data['access'],
+            'refresh': data['refresh']
+        }

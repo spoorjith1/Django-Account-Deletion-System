@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .models import User
-from .serializers import RegisterSerializer, UserProfileSerializer, PasswordChangeSerializer
+from .serializers import RegisterSerializer, UserProfileSerializer, PasswordChangeSerializer, CustomTokenObtainPairSerializer
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from datetime import timedelta
 from django.utils import timezone
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class UserRegisterView(generics.CreateAPIView):
@@ -37,7 +38,7 @@ class PasswordChangeView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     
-#delete account view
+#delete account
 class DeleteAccountView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request):
@@ -47,7 +48,25 @@ class DeleteAccountView(APIView):
             return Response({'message': 'Account is already scheduled for deletion'}, status=status.HTTP_400_BAD_REQUEST)
         
         user.is_deleted = True
-        user.delete_date = timezone.now() + timedelta(days=30)
+        user.deletion_date = timezone.now() + timedelta(days=30)
         user.save()
         
         return Response({'message': 'Account schedule for deletion'}, status=status.HTTP_200_OK)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+class RestoreAccountView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        user_id = request.data.get('user_id')
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'message': 'user not found'}, status=404)
+        user.is_deleted = False
+        user.deletion_date = None
+        user.save()
+        return Response({'message': 'Account restored successfully'})
